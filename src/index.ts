@@ -61,7 +61,9 @@ class RefreshAnnouncements {
     // if we have an announcement display a button to get the announcements
     if (Object.keys(data).length !== 0 && data.announcement !== '') {
       this.createAnnouncementsButton(this.newAnnouncement);
-      if (data.announcement.match(/warning|error|critical/gi)) {
+      if (this.newAnnouncement &&
+          "level" in data &&
+	  data.level.match(/warning|error|critical/gi)) {
             this.openAnnouncements();
       }
     }
