@@ -32,7 +32,7 @@ class RefreshAnnouncements {
   // creates and destroys the announcement button based on result of fetch
   async updateAnnouncements(url: string, n: number) {
     // get data the data from the API
-    let data = { user: '', announcement: '', timestamp: '' };
+    let data = { user: '', announcement: '', timestamp: '', popup: false };
     try {
       const response = await fetch(url);
       data = await response.json();
