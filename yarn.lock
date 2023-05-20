@@ -707,7 +707,7 @@
   dependencies:
     "@lumino/algorithm" "^2.0.0"
 
-"@lumino/widgets@^1.22.0", "@lumino/widgets@^1.37.2":
+"@lumino/widgets@^1.37.1", "@lumino/widgets@^1.37.2":
   version "1.37.2"
   resolved "https://registry.yarnpkg.com/@lumino/widgets/-/widgets-1.37.2.tgz#b408fae221ecec2f1b028607782fbe1e82588bce"
   integrity sha512-NHKu1NBDo6ETBDoNrqSkornfUCwc8EFFzw6+LWBfYVxn2PIwciq2SdiJGEyNqL+0h/A9eVKb5ui5z4cwpRekmQ==
