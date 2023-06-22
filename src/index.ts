@@ -7,29 +7,6 @@ import { IStatusBar } from '@jupyterlab/statusbar';
 import { Dialog, showDialog } from '@jupyterlab/apputils';
 import { ISettingRegistry } from '@jupyterlab/settingregistry';
 
-class ButtonWidget extends Widget {
-  public constructor(
-    announcementsObject: RefreshAnnouncements,
-    newAnnouncement: boolean,
-    options = { node: document.createElement('p') }
-  ) {
-    super(options);
-    this.node.classList.add('open-announcements');
-
-    // when the button is clicked:
-    // mark the announcement as no longer new
-    // open the announcement in a modal
-    // edit the announcement button (to get rid of yellow warning emoji)
-    this.node.onclick = () => {
-      announcementsObject.newAnnouncement = false;
-      announcementsObject.openAnnouncements();
-      announcementsObject.createAnnouncementsButton(
-        announcementsObject.newAnnouncement
-      );
-    };
-  }
-}
-
 // Class that handles all the announcements refresh information and methods
 class RefreshAnnouncements {
   // tracks the button to show announcements
@@ -45,12 +22,11 @@ class RefreshAnnouncements {
 
   // takes the statusbar that we will add to as only parameter
   public constructor(statusbar: IStatusBar) {
-    this.openAnnouncementButton = new ButtonWidget(this, false);
+    this.openAnnouncementButton = null;
     this.announcement = { user: '', announcement: '', timestamp: '' };
     this.statusbar = statusbar;
     this.newAnnouncement = false;
   }
-
 
   // fetches the announcements data every n microseconds from the given url
   // creates and destroys the announcement button based on result of fetch
@@ -105,6 +81,28 @@ class RefreshAnnouncements {
   // creates/edits a button on the status bar to open the announcements modal
   createAnnouncementsButton(newAnnouncement: boolean) {
     // class used to create the open announcements button
+    class ButtonWidget extends Widget {
+      public constructor(
+        announcementsObject: RefreshAnnouncements,
+        newAnnouncement: boolean,
+        options = { node: document.createElement('p') }
+      ) {
+        super(options);
+        this.node.classList.add('open-announcements');
+
+        // when the button is clicked:
+        // mark the announcement as no longer new
+        // open the announcement in a modal
+        // edit the announcement button (to get rid of yellow warning emoji)
+        this.node.onclick = () => {
+          announcementsObject.newAnnouncement = false;
+          announcementsObject.openAnnouncements();
+          announcementsObject.createAnnouncementsButton(
+            announcementsObject.newAnnouncement
+          );
+        };
+      }
+    }
 
     // if the open announcements button isn't on the status bar
     if (!this.openAnnouncementButton) {
