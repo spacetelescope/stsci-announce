@@ -3,6 +3,50 @@
     text-decoration: underline;
 }
 
+.announce-info {
+    color: rgb(20, 20, 150);
+    font-weight: bold; 
+}
+
+.announce-notice {
+    color: rgb(20, 20, 150);
+    font-weight: bold; 
+}
+
+.announce-error {
+    color: red;
+    font-weight: bold; 
+}
+
+.announce-critical {
+    color: red;
+    font-weight: bold; 
+}
+
+.announce-warning {
+    color: orange;
+    font-weight: bold; 
+}
+
+.announce-timestamp {
+    color: darkgreen;
+}
+
+.announce-dash {
+    color: darkgreen;
+}
+
+.announce-text {
+    color: var(--jp-ui-font-color0);
+}
+
+.announce-block-title {
+    color: var(--jp-ui-font-color0); 
+    font-size: 1.2em;
+    font-weight: 500;
+    text-align: left;
+}
+
 .open-announcements {
    line-height: 24px;
    font-size: var(--jp-ui-font-size1);

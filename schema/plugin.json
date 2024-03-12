@@ -1,13 +1,13 @@
 {
-    "title": "Announcements Refresh Extension",
-    "description": "Announcements Refresh settings",
+    "title": "STScI Announcements",
+    "description": "STScI Announcements settings",
     "type": "object",
     "properties": {
         "url": {
             "type": "string",
-            "title": "Announcements API URL",
+            "title": "STSCI Announcements API URL",
             "description": "This is the URL that the extension will fetch announcements from",
-            "default": "/services/announcement/latest"
+            "default": "/services/announcement/latest-v2"
         },
         "refresh-interval": {
             "type": "number",

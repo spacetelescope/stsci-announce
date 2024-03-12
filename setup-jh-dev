@@ -1,0 +1,28 @@
+#! /bin/bash
+
+# Copy and paste this into an executable shell script on the hub.
+## Check out the nersc-refresh-announcements repo for live work in
+## a JupyterHub notebook session.
+
+set -eu
+
+git clone https://github.com/jaytmiller/nersc-refresh-announcements.git
+
+cd nersc-refresh-announcements
+git fetch origin
+git checkout stsci-announce
+
+source ~/.bashrc
+
+# Partial install may fail,  but enables jlpm for below
+set +e
+pip install .
+set -e
+
+jlpm run clean
+pip install .
+pip install -e .
+jupyter labextension develop . --overwrite
+jlpm run build
+
+cd ..
