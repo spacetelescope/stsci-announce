@@ -302,17 +302,17 @@ class RefreshAnnouncements {
   }
 }
 
-const PLUGIN_ID = 'nersc-refresh-announcements:plugin';
+const PLUGIN_ID = 'stsci-announce:plugin';
 
 /**
- * Initialization data for the nersc-refresh-announcements extension.
+ * Initialization data for the stsci-announce extension.
  */
 const extension: JupyterFrontEndPlugin<void> = {
   id: PLUGIN_ID,
   autoStart: true,
   requires: [IStatusBar, ISettingRegistry],
   activate: async (app: JupyterFrontEnd, statusBar: IStatusBar, settingRegistry: ISettingRegistry) => {
-    console.log('JupyterLab extension nersc-refresh-announcements is activated!');
+    console.log('JupyterLab extension stsci-announce is activated!');
 
     const settings = await settingRegistry.load(PLUGIN_ID);
     const apiUrl = settings.get('url').composite as string;

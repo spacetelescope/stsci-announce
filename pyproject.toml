@@ -3,7 +3,7 @@ requires = ["hatchling>=1.5.0", "jupyterlab>=4.0.0,<5", "hatch-nodejs-version"]
 build-backend = "hatchling.build"
 
 [project]
-name = "nersc_refresh_announcements"
+name = "stsci_announce"
 readme = "README.md"
 license = { file = "LICENSE" }
 requires-python = ">=3.8"
@@ -32,24 +32,24 @@ source = "nodejs"
 fields = ["description", "authors", "urls"]
 
 [tool.hatch.build.targets.sdist]
-artifacts = ["nersc_refresh_announcements/labextension"]
+artifacts = ["stsci_announce/labextension"]
 exclude = [".github", "binder"]
 
 [tool.hatch.build.targets.wheel.shared-data]
-"nersc_refresh_announcements/labextension" = "share/jupyter/labextensions/nersc-refresh-announcements"
-"install.json" = "share/jupyter/labextensions/nersc-refresh-announcements/install.json"
+"stsci_announce/labextension" = "share/jupyter/labextensions/stsci-announce"
+"install.json" = "share/jupyter/labextensions/stsci-announce/install.json"
 
 [tool.hatch.build.hooks.version]
-path = "nersc_refresh_announcements/_version.py"
+path = "stsci_announce/_version.py"
 
 [tool.hatch.build.hooks.jupyter-builder]
 dependencies = ["hatch-jupyter-builder>=0.5"]
 build-function = "hatch_jupyter_builder.npm_builder"
 ensured-targets = [
-    "nersc_refresh_announcements/labextension/static/style.js",
-    "nersc_refresh_announcements/labextension/package.json",
+    "stsci_announce/labextension/static/style.js",
+    "stsci_announce/labextension/package.json",
 ]
-skip-if-exists = ["nersc_refresh_announcements/labextension/static/style.js"]
+skip-if-exists = ["stsci_announce/labextension/static/style.js"]
 
 [tool.hatch.build.hooks.jupyter-builder.build-kwargs]
 build_cmd = "build:prod"
@@ -59,7 +59,7 @@ npm = ["jlpm"]
 build_cmd = "install:extension"
 npm = ["jlpm"]
 source_dir = "src"
-build_dir = "nersc_refresh_announcements/labextension"
+build_dir = "stsci_announce/labextension"
 
 [tool.jupyter-releaser.options]
 version_cmd = "hatch version"

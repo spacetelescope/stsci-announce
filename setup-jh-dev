@@ -1,7 +1,7 @@
 #! /bin/bash
 
 # Copy and paste this into an executable shell script on the hub.
-## Check out the nersc-refresh-announcements repo for live work in
+## Check out the stsci-announce repo for live work in
 ## a JupyterHub notebook session.
 
 set -eux
@@ -13,9 +13,9 @@ else
     BRANCH=$1
 fi
 
-git clone https://github.com/jaytmiller/nersc-refresh-announcements.git
+git clone https://github.com/jaytmiller/stsci-announce.git
 
-cd nersc-refresh-announcements
+cd stsci-announce
 git fetch origin
 git checkout ${BRANCH}
 

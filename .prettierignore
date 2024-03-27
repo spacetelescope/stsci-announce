@@ -3,4 +3,4 @@ node_modules
 **/lib
 **/package.json
 !/package.json
-nersc_refresh_announcements
+stsci_announce
