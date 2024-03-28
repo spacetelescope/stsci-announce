@@ -25,5 +25,5 @@ jobs:
       - name: Upload Distributions
         uses: actions/upload-artifact@v3
         with:
-          name: nersc_refresh_announcements-releaser-dist-${{ github.run_number }}
+          name: stsci_announce-releaser-dist-${{ github.run_number }}
           path: .jupyter_releaser_checkout/dist

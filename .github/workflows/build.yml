@@ -32,7 +32,7 @@ jobs:
         python -m pip install .[test]
 
         jupyter labextension list
-        jupyter labextension list 2>&1 | grep -ie "nersc-refresh-announcements.*OK"
+        jupyter labextension list 2>&1 | grep -ie "stsci-announce.*OK"
         python -m jupyterlab.browser_check
 
     - name: Package the extension
@@ -41,13 +41,13 @@ jobs:
 
         pip install build
         python -m build
-        pip uninstall -y "nersc_refresh_announcements" jupyterlab
+        pip uninstall -y "stsci_announce" jupyterlab
 
     - name: Upload extension packages
       uses: actions/upload-artifact@v3
       with:
         name: extension-artifacts
-        path: dist/nersc_refresh_announcements*
+        path: dist/stsci_announce*
         if-no-files-found: error
 
   test_isolated:
@@ -72,11 +72,11 @@ jobs:
         sudo rm -rf $(which node)
         sudo rm -rf $(which node)
 
-        pip install "jupyterlab>=4.0.0,<5" nersc_refresh_announcements*.whl
+        pip install "jupyterlab>=4.0.0,<5" stsci_announce*.whl
 
 
         jupyter labextension list
-        jupyter labextension list 2>&1 | grep -ie "nersc-refresh-announcements.*OK"
+        jupyter labextension list 2>&1 | grep -ie "stsci-announce.*OK"
         python -m jupyterlab.browser_check --no-browser-test
 
 

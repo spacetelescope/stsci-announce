@@ -3601,9 +3601,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"nersc-refresh-announcements@workspace:.":
+"stsci-announce@workspace:.":
   version: 0.0.0-use.local
-  resolution: "nersc-refresh-announcements@workspace:."
+  resolution: "stsci-announce@workspace:."
   dependencies:
     "@jupyterlab/application": ^4.0.0
     "@jupyterlab/builder": ^4.0.0
