@@ -16,6 +16,10 @@
         "name": "Josh Geden",
         "email": "jgeden@lbl.gov"
     },
+    "maintainers": {
+        "name": "Todd Miller",
+        "e-mail": "jmiller@stsci.edu"
+    },
     "files": [
         "lib/**/*.{d.ts,eot,gif,html,jpg,js,js.map,json,png,svg,woff2,ttf}",
         "style/**/*.{css,.js,eot,gif,html,jpg,json,png,svg,woff2,ttf}",
