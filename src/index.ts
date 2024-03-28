@@ -14,7 +14,7 @@ function escapeHtml(html: string): string {
 }
 
 function dlog(...args: any[]) {
-  console.log(...args);
+  // console.log(...args);
 }
 
 function log_and_throw(...args: any[]) {
@@ -143,7 +143,7 @@ class AnnouncementsData {
 function jsonToAnnouncementsData(jsonData: any): AnnouncementsData {
     // Given unchecked `jsonData`,  create an AnnouncementsData instance
     // checking each field as used or as lower level objects use them.
-    // All parameters should be checked and escaped to make them safe 
+    // All parameters should be checked and escaped to make them safe
     // for display in the browser.
     if (!Array.isArray(jsonData.blocks)) {
         log_and_throw('Bad blocks array.');
