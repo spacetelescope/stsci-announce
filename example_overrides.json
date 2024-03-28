@@ -1,6 +1,6 @@
 {
-    "nersc-refresh-announcements:plugin": {
-        "url": "https://jupyter.nersc.gov/services/announcement/latest",
+    "stsci-announce:plugin": {
+        "url": "https://future.science.stsci.edu/services/announcement/latest-v2",
         "refresh-interval": 300000
     }
 }

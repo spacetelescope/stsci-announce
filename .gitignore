@@ -7,9 +7,9 @@ node_modules/
 *.egg-info/
 .ipynb_checkpoints
 *.tsbuildinfo
-nersc_refresh_announcements/labextension
+stsci_announce/labextension
 # Version file is handled by hatchling
-nersc_refresh_announcements/_version.py
+stsci_announce/_version.py
 
 # Created by https://www.gitignore.io/api/python
 # Edit at https://www.gitignore.io/?templates=python

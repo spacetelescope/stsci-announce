@@ -8,12 +8,11 @@ file_extension: ''
 has_binder: false
 has_settings: true
 kind: frontend
-labextension_name: nersc-refresh-announcements
+labextension_name: stsci-announce
 mimetype: ''
 mimetype_name: ''
 project_short_description: A JupyterLab extension.
-python_name: nersc_refresh_announcements
-repository: https://github.com/NERSC/nersc_refresh_announcements.git
+python_name: stsci_announce
+repository: https://github.com/spacetelescope/stsci-announce.git
 test: false
 viewer_name: ''
-
