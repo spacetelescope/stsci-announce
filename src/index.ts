@@ -4,6 +4,8 @@ import { IStatusBar } from '@jupyterlab/statusbar';
 import { Dialog, showDialog } from '@jupyterlab/apputils';
 import { ISettingRegistry } from '@jupyterlab/settingregistry';
 
+import { ServerConnection } from '@jupyterlab/services';
+
 // ===================================================================================
 
 // Use the browser's built-in functionality to quickly and safely escape the string
@@ -14,7 +16,7 @@ function escapeHtml(html: string): string {
 }
 
 function dlog(...args: any[]) {
-  // console.log(...args);
+  console.log(...args);
 }
 
 function log_and_throw(...args: any[]) {
@@ -189,10 +191,11 @@ class RefreshAnnouncements {
   async updateAnnouncements(url: string, n: number) {
     try {
       dlog(`Updating announcements from ${url} every ${n} microseconds`);
-
+      const serverSettings = ServerConnection.makeSettings();
       const response = await fetch(url, {
         method: 'GET',
         headers: {
+          'Authorization': 'token ' + serverSettings.token,
           'Content-Type': 'application/json',
           'Cache-Control': 'no-cache'
         },
