@@ -16,7 +16,7 @@ function escapeHtml(html: string): string {
 }
 
 function dlog(...args: any[]) {
-  console.log(...args);
+//  console.log(...args);
 }
 
 function log_and_throw(...args: any[]) {
