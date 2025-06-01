@@ -1,0 +1,30 @@
+#! /bin/bash
+
+echo "========================================================================================================================"
+echo "!!! Before installing,  update the version in the source code to ensure you can differentiate vs. the installed version."
+echo "!!! Try 'npm version [patch|minor|major] --no-git-tag-version' or e.g. 'npm version 0.8.0 --no-git-tag-version'."
+echo "========================================================================================================================"
+
+ans=${1:-}
+
+if [[ -z $ans ]]; then
+    read -r -p "Continue [y|n]? " ans
+fi
+
+case $ans in
+    [nN]|[nN][oO])
+        exit 1
+        ;;
+esac
+
+pip install -e .
+
+jupyter labextension develop . --overwrite
+
+jlpm run build
+
+echo "========================================================================================================================"
+echo "!!! Make sure you're in the right environment for replacing the labextension,  nominally base but try the mission env if base does not work."
+echo "!!! Make sure to disable then re-enable the stsci-announce labextension under the puzzle-piece in the left hand panel."
+echo "!!! Make sure to refresh the page."
+echo "========================================================================================================================"

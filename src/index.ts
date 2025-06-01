@@ -3,20 +3,40 @@ import { Widget } from '@lumino/widgets';
 import { IStatusBar } from '@jupyterlab/statusbar';
 import { Dialog, showDialog } from '@jupyterlab/apputils';
 import { ISettingRegistry } from '@jupyterlab/settingregistry';
-
 import { ServerConnection } from '@jupyterlab/services';
-
+import DOMPurify from 'dompurify';
 // ===================================================================================
 
-// Use the browser's built-in functionality to quickly and safely escape the string
+DOMPurify.addHook('afterSanitizeAttributes', (node: any) => {
+  // set all elements owning target to target=_blank
+  if ('target' in node) {
+    node.setAttribute('target', '_blank');
+  }
+  if (node.tagName === 'A' && node.getAttribute('href')) {
+    node.setAttribute('rel', 'noopener noreferrer');
+  }
+});
+
+// Use DOMPurify to sanitize HTML content
+function sanitizeHtml(html: string): string {
+  return DOMPurify.sanitize(html, {
+    ALLOWED_TAGS: ['a', 'b', 'i', 'u', 'strong', 'em', 'br', 'p', 'ul', 'ol', 'li', 'code', 'pre'],
+    ALLOWED_ATTR: ['href', 'target', 'rel'],
+    ALLOW_DATA_ATTR: false,
+    ADD_ATTR: ['target']
+    // Ensure external links open in new tab
+  });
+}
+
+// Keep escapeHtml for non-HTML content that should be displayed as plain text
 function escapeHtml(html: string): string {
   const div = document.createElement('div');
   div.appendChild(document.createTextNode(html));
-  return div.innerText;
+  return div.innerHTML;
 }
 
 function dlog(...args: any[]) {
-//  console.log(...args);
+  //  console.log(...args);
 }
 
 function log_and_throw(...args: any[]) {
@@ -42,7 +62,7 @@ class Message {
     if (!(typeof timestamp === 'string' && /^\d\d\d\d-\d\d-\d\dT\d\d:\d\d(:\d\d(.\d\d\d(\d\d\d)?)?)?$/.test(timestamp))) {
       log_and_throw('Bad message timestamp.');
     }
-    if (!(typeof expires === 'string' && /^\d+\-\d\d:\d\d:\d\d$/.test(expires))) {
+    if (!(typeof expires === 'string' && /^\d+-\d\d:\d\d:\d\d$/.test(expires))) {
       log_and_throw('Bad expires time.');
     }
     if (!['debug', 'info', 'notice', 'warning', 'error', 'critical'].includes(level)) {
@@ -51,11 +71,13 @@ class Message {
     if (!(typeof message === 'string' && message.length > 0 && message.length <= 1024)) {
       log_and_throw('Bad message content.');
     }
+    // Escape metadata fields (these should be plain text)
     this.username = escapeHtml(username);
     this.timestamp = escapeHtml(timestamp);
     this.expires = escapeHtml(expires);
     this.level = escapeHtml(level);
-    this.message = escapeHtml(message);
+    // Sanitize message content (this can contain safe HTML)
+    this.message = sanitizeHtml(message);
   }
 
   fmtTimestamp(): string {
@@ -90,7 +112,8 @@ class MessageBlock {
     if (!messages.every(msg => msg instanceof Message)) {
       log_and_throw('Bad messages.');
     }
-    this.title = escapeHtml(title);
+    // Sanitize title (allow basic formatting)
+    this.title = sanitizeHtml(title);
     this.messages = messages;
   }
 
@@ -143,24 +166,24 @@ class AnnouncementsData {
 }
 
 function jsonToAnnouncementsData(jsonData: any): AnnouncementsData {
-    // Given unchecked `jsonData`,  create an AnnouncementsData instance
-    // checking each field as used or as lower level objects use them.
-    // All parameters should be checked and escaped to make them safe
-    // for display in the browser.
-    if (!Array.isArray(jsonData.blocks)) {
-        log_and_throw('Bad blocks array.');
+  // Given unchecked `jsonData`,  create an AnnouncementsData instance
+  // checking each field as used or as lower level objects use them.
+  // All parameters should be checked and sanitized to make them safe
+  // for display in the browser.
+  if (!Array.isArray(jsonData.blocks)) {
+    log_and_throw('Bad blocks array.');
+  }
+  const blocks = jsonData.blocks.map((blockData: MessageBlock) => {
+    const bdmessages = blockData.messages;
+    if (!Array.isArray(bdmessages) || bdmessages.length <= 0 || bdmessages.length > 16) {
+      // currently 5 on  server
+      log_and_throw('Bad messages array.');
     }
-    const blocks = jsonData.blocks.map((blockData: MessageBlock) => {
-        const bdmessages = blockData.messages;
-        if (!Array.isArray(bdmessages) || bdmessages.length <= 0 || bdmessages.length > 16) {
-            // currently 5 on  server
-            log_and_throw('Bad messages array.');
-        }
-        const messages = bdmessages.map((msg: Message) => {
-            return new Message(msg.username, msg.timestamp, msg.expires, msg.level, msg.message);
-        });
-        return new MessageBlock(blockData.title, messages);
+    const messages = bdmessages.map((msg: Message) => {
+      return new Message(msg.username, msg.timestamp, msg.expires, msg.level, msg.message);
     });
+    return new MessageBlock(blockData.title, messages);
+  });
   return new AnnouncementsData(jsonData.popup, jsonData.timestamp, blocks);
 }
 
@@ -177,6 +200,12 @@ class RefreshAnnouncements {
   // this tracks whether or not the user has seen the announcement
   // it determines whether or not to show the yellow alert emoji
   newAnnouncement: boolean;
+  // tracks retry backoff state
+  retryDelay: number;
+  maxRetryDelay: number;
+  initialRetryDelay: number;
+  // tracks service state for visual feedback
+  serviceState: 'normal' | 'degraded' | 'failed';
 
   // takes the statusbar that we will add to as only parameter
   public constructor(statusbar: IStatusBar) {
@@ -184,6 +213,83 @@ class RefreshAnnouncements {
     this.last_rendered = '';
     this.statusbar = statusbar;
     this.newAnnouncement = false;
+    this.initialRetryDelay = 10000; // 10 seconds
+    this.maxRetryDelay = 600000; // 10 minutes
+    this.retryDelay = this.initialRetryDelay;
+    this.serviceState = 'normal';
+  }
+
+  // Helper method to check if status code indicates permission issues
+  private isPermissionError(status: number): boolean {
+    return status === 401 || status === 403 || status === 407;
+  }
+
+  // Helper method to check if we should retry based on status code
+  private shouldRetry(status: number): boolean {
+    // Retry on permission errors and server errors (5xx)
+    return this.isPermissionError(status) || (status >= 500 && status < 600);
+  }
+
+  // Update button text and styling based on service state
+  private updateButtonForServiceState() {
+    if (!this.openAnnouncementButton) {
+      return;
+    }
+    switch (this.serviceState) {
+      case 'normal':
+        if (!this.newAnnouncement) {
+          this.openAnnouncementButton.node.textContent = 'Announcements';
+        } else {
+          this.openAnnouncementButton.node.textContent = '⚠️ Click for Announcements';
+        }
+        this.openAnnouncementButton.node.style.color = '';
+        break;
+
+      case 'degraded':
+        this.openAnnouncementButton.node.textContent = '🔄 Announcements (Retrying...)';
+        this.openAnnouncementButton.node.style.color = 'orange';
+        break;
+
+      case 'failed':
+        this.openAnnouncementButton.node.textContent = '❌ Announcements (Unavailable)';
+        this.openAnnouncementButton.node.style.color = 'red';
+        break;
+    }
+  }
+
+  // Update button tooltip based on service state
+  private updateButtonTooltip() {
+    if (!this.openAnnouncementButton) {
+      return;
+    }
+    switch (this.serviceState) {
+      case 'normal':
+        this.openAnnouncementButton.node.title = 'Click to view announcements';
+        break;
+      case 'degraded':
+        this.openAnnouncementButton.node.title = `Announcement service experiencing issues. Retrying in ${this.retryDelay / 1000}s...`;
+        break;
+      case 'failed':
+        this.openAnnouncementButton.node.title = 'Announcement service unavailable. Will retry periodically.';
+        break;
+    }
+  }
+
+  // Show recovery notification when service is restored
+  private showRecoveryNotification() {
+    if (!this.openAnnouncementButton) {
+      return;
+    }
+    // Temporarily show recovery message
+    this.openAnnouncementButton.node.textContent = '✅ Announcements Restored';
+    this.openAnnouncementButton.node.style.color = 'green';
+    this.openAnnouncementButton.node.title = 'Announcement service has been restored';
+
+    // Revert after 3 seconds
+    setTimeout(() => {
+      this.updateButtonForServiceState();
+      this.updateButtonTooltip();
+    }, 3000);
   }
 
   // fetches the announcements data every n microseconds from the given url
@@ -195,7 +301,7 @@ class RefreshAnnouncements {
       const response = await fetch(url, {
         method: 'GET',
         headers: {
-          'Authorization': 'token ' + serverSettings.token,
+          Authorization: 'token ' + serverSettings.token,
           'Content-Type': 'application/json',
           'Cache-Control': 'no-cache'
         },
@@ -203,12 +309,45 @@ class RefreshAnnouncements {
       });
       dlog('Response: ', response);
 
+      // Check if response is not ok and should be retried
+      if (!response.ok && this.shouldRetry(response.status)) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      // If we get here, either response is ok or it's a non-retryable error
+      if (!response.ok) {
+        console.warn(`Non-retryable error fetching announcements: ${response.status} ${response.statusText}`);
+        // Reset retry delay for successful connection (even if non-retryable error)
+        this.retryDelay = this.initialRetryDelay;
+        const wasServiceDegraded = this.serviceState !== 'normal';
+        this.serviceState = 'normal';
+
+        // Show recovery notification if we were previously degraded
+        if (wasServiceDegraded) {
+          this.showRecoveryNotification();
+        }
+
+        // Hide button on non-retryable errors
+        if (this.openAnnouncementButton) {
+          this.openAnnouncementButton.node.textContent = '';
+        }
+        setTimeout(() => {
+          this.updateAnnouncements(url, n);
+        }, n);
+        return;
+      }
+
       const jsonData = await response.json();
       dlog('jsonData:', jsonData);
 
       const announcements = jsonToAnnouncementsData(jsonData);
       const rendered = announcements.toHtml();
       dlog('Rendered:', rendered);
+
+      // Success case - check if service was previously degraded
+      const wasServiceDegraded = this.serviceState !== 'normal';
+      this.serviceState = 'normal';
+      this.retryDelay = this.initialRetryDelay;
 
       // check to see if the data is new
       if (rendered !== this.last_rendered) {
@@ -219,6 +358,16 @@ class RefreshAnnouncements {
       // if we have an announcement display a button to get the announcements
       if (this.last_rendered.length > 0) {
         this.createAnnouncementsButton(this.newAnnouncement);
+
+        // Show recovery notification if we were previously degraded
+        if (wasServiceDegraded) {
+          this.showRecoveryNotification();
+        } else {
+          // Update button state normally
+          this.updateButtonForServiceState();
+          this.updateButtonTooltip();
+        }
+
         if (this.newAnnouncement && announcements.popup) {
           this.openAnnouncements();
         }
@@ -230,11 +379,50 @@ class RefreshAnnouncements {
       }
     } catch (e) {
       // there was an error with fetching
-      if (this.openAnnouncementButton) {
-        this.openAnnouncementButton.dispose();
+      console.warn(`Error fetching announcements: ${e}`);
+
+      // Update service state based on retry attempts
+      if (this.retryDelay >= this.maxRetryDelay) {
+        console.error(`Giving up on fetching announcements after reaching max retry delay of ${this.maxRetryDelay}ms`);
+        this.serviceState = 'failed';
+
+        // Ensure button exists to show failed state
+        if (!this.openAnnouncementButton) {
+          this.createAnnouncementsButton(false);
+        }
+        this.updateButtonForServiceState();
+        this.updateButtonTooltip();
+
+        // Reset retry delay and continue with normal polling interval
+        this.retryDelay = this.initialRetryDelay;
+        setTimeout(() => {
+          this.updateAnnouncements(url, n);
+        }, n);
+        return;
       }
+
+      // Set degraded state and update button
+      this.serviceState = 'degraded';
+
+      // Ensure button exists to show degraded state
+      if (!this.openAnnouncementButton) {
+        this.createAnnouncementsButton(false);
+      }
+      this.updateButtonForServiceState();
+      this.updateButtonTooltip();
+
+      // Use exponential backoff for retry
+      console.log(`Retrying in ${this.retryDelay}ms...`);
+      setTimeout(() => {
+        this.updateAnnouncements(url, n);
+      }, this.retryDelay);
+
+      // Double the retry delay for next time, but don't exceed max
+      this.retryDelay = Math.min(this.retryDelay * 2, this.maxRetryDelay);
+      return;
     }
-    // wait n microseconds and check again
+
+    // wait n microseconds and check again (normal polling)
     setTimeout(() => {
       this.updateAnnouncements(url, n);
     }, n);
