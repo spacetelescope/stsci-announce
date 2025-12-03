@@ -46,11 +46,6 @@ class ValidationError extends Error {
   }
 }
 
-function log_and_throw(...args: any[]) {
-  console.log(...args);
-  throw new Error(...args);
-}
-
 // ===================================================================================
 
 // type Levels = 'debug' | 'info' | 'notice' | 'warning' | 'error' | 'critical';
@@ -129,9 +124,11 @@ class MessageBlock {
       return '';
     } else {
       return `<table class="announcement-block">
-                        <theader>
-                            <p class='announce-block-title'>${this.title}</p>
-                        </theader>
+                        <thead>
+                            <tr>
+                                <th colspan="4" class='announce-block-title'>${this.title}</th>
+                            </tr>
+                        </thead>
                         <tbody>
                             ${this.messages.map(msg => msg.toHtml()).join('\n')}
                         </tbody>
@@ -148,6 +145,9 @@ class AnnouncementsData {
   constructor(popup: boolean, timestamp: string, blocks: MessageBlock[]) {
     if (typeof popup !== 'boolean') {
       throw new ValidationError('Bad popup type.');
+    }
+    if (!(typeof timestamp === 'string' && timestamp.length < 128)) {
+      throw new ValidationError('Bad timestamp.');
     }
     if (!Array.isArray(blocks)) {
       throw new ValidationError('Bad blocks array.');
@@ -364,7 +364,7 @@ class RefreshAnnouncements {
 
       // if we have an announcement display a button to get the announcements
       if (this.last_rendered.length > 0) {
-        this.createAnnouncementsButton(this.newAnnouncement);
+        this.createAnnouncementsButton();
 
         // Show recovery notification if we were previously degraded
         if (wasServiceDegraded) {
@@ -407,7 +407,7 @@ class RefreshAnnouncements {
 
         // Ensure button exists to show failed state
         if (!this.openAnnouncementButton) {
-          this.createAnnouncementsButton(false);
+          this.createAnnouncementsButton();
         }
         this.updateButtonForServiceState();
         this.updateButtonTooltip();
@@ -425,7 +425,7 @@ class RefreshAnnouncements {
 
       // Ensure button exists to show degraded state
       if (!this.openAnnouncementButton) {
-        this.createAnnouncementsButton(false);
+        this.createAnnouncementsButton();
       }
       this.updateButtonForServiceState();
       this.updateButtonTooltip();
@@ -448,12 +448,11 @@ class RefreshAnnouncements {
   }
 
   // creates/edits a button on the status bar to open the announcements modal
-  createAnnouncementsButton(newAnnouncement: boolean) {
+  createAnnouncementsButton() {
     // class used to create the open announcements button
     class ButtonWidget extends Widget {
       public constructor(
         announcementsObject: RefreshAnnouncements,
-        newAnnouncement: boolean,
         options = { node: document.createElement('span') }
       ) {
         super(options);
@@ -466,7 +465,7 @@ class RefreshAnnouncements {
         this.node.onclick = () => {
           announcementsObject.newAnnouncement = false;
           announcementsObject.openAnnouncements();
-          announcementsObject.createAnnouncementsButton(announcementsObject.newAnnouncement);
+          announcementsObject.createAnnouncementsButton();
         };
       }
     }
@@ -474,7 +473,7 @@ class RefreshAnnouncements {
     // if the open announcements button isn't on the status bar
     if (!this.openAnnouncementButton) {
       // creates the open annonucements button
-      this.openAnnouncementButton = new ButtonWidget(this, this.newAnnouncement);
+      this.openAnnouncementButton = new ButtonWidget(this);
       // places the button on the status bar
       this.statusbar.registerStatusItem('new-announcement', {
         align: 'left',
@@ -483,7 +482,7 @@ class RefreshAnnouncements {
     }
 
     // labels the button if the announcement based on if it is new or not
-    if (!newAnnouncement) {
+    if (!this.newAnnouncement) {
       this.openAnnouncementButton.node.textContent = 'Announcements';
     } else {
       this.openAnnouncementButton.node.textContent = '⚠️ Click for Announcements';
