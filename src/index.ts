@@ -39,6 +39,13 @@ function dlog(...args: any[]) {
   //  console.log(...args);
 }
 
+class ValidationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'ValidationError';
+  }
+}
+
 function log_and_throw(...args: any[]) {
   console.log(...args);
   throw new Error(...args);
@@ -57,19 +64,19 @@ class Message {
 
   constructor(username: string, timestamp: string, expires: string, level: string, message: string) {
     if (!(typeof username === 'string' && username.length > 0 && username.length <= 32 && /^[a-zA-Z0-9_@.-]+$/.test(username))) {
-      log_and_throw('Bad message username.');
+      throw new ValidationError('Bad message username.');
     }
     if (!(typeof timestamp === 'string' && /^\d\d\d\d-\d\d-\d\dT\d\d:\d\d(:\d\d(.\d\d\d(\d\d\d)?)?)?$/.test(timestamp))) {
-      log_and_throw('Bad message timestamp.');
+      throw new ValidationError('Bad message timestamp.');
     }
     if (!(typeof expires === 'string' && /^\d+-\d\d:\d\d:\d\d$/.test(expires))) {
-      log_and_throw('Bad expires time.');
+      throw new ValidationError('Bad expires time.');
     }
     if (!['debug', 'info', 'notice', 'warning', 'error', 'critical'].includes(level)) {
-      log_and_throw('Bad level setting.');
+      throw new ValidationError('Bad level setting.');
     }
     if (!(typeof message === 'string' && message.length > 0 && message.length <= 1024)) {
-      log_and_throw('Bad message content.');
+      throw new ValidationError('Bad message content.');
     }
     // Escape metadata fields (these should be plain text)
     this.username = escapeHtml(username);
@@ -103,14 +110,14 @@ class MessageBlock {
 
   constructor(title: string, messages: Message[]) {
     if (typeof title !== 'string' || title.length <= 0 || title.length > 128) {
-      log_and_throw('Bad title.');
+      throw new ValidationError('Bad title.');
     }
     if (!Array.isArray(messages) || messages.length <= 0 || messages.length > 16) {
       // currently 5 on  server
-      log_and_throw('Bad messages array.');
+      throw new ValidationError('Bad messages array.');
     }
     if (!messages.every(msg => msg instanceof Message)) {
-      log_and_throw('Bad messages.');
+      throw new ValidationError('Bad messages.');
     }
     // Sanitize title (allow basic formatting)
     this.title = sanitizeHtml(title);
@@ -140,13 +147,13 @@ class AnnouncementsData {
 
   constructor(popup: boolean, timestamp: string, blocks: MessageBlock[]) {
     if (typeof popup !== 'boolean') {
-      log_and_throw('Bad popup type.');
+      throw new ValidationError('Bad popup type.');
     }
     if (!Array.isArray(blocks)) {
-      log_and_throw('Bad blocks array.');
+      throw new ValidationError('Bad blocks array.');
     }
     if (!blocks.every(block => block instanceof MessageBlock)) {
-      log_and_throw('Bad blocks.');
+      throw new ValidationError('Bad blocks.');
     }
     this.popup = popup;
     this.timestamp = escapeHtml(timestamp);
@@ -171,13 +178,13 @@ function jsonToAnnouncementsData(jsonData: any): AnnouncementsData {
   // All parameters should be checked and sanitized to make them safe
   // for display in the browser.
   if (!Array.isArray(jsonData.blocks)) {
-    log_and_throw('Bad blocks array.');
+    throw new ValidationError('Bad blocks array.');
   }
   const blocks = jsonData.blocks.map((blockData: MessageBlock) => {
     const bdmessages = blockData.messages;
     if (!Array.isArray(bdmessages) || bdmessages.length <= 0 || bdmessages.length > 16) {
       // currently 5 on  server
-      log_and_throw('Bad messages array.');
+      throw new ValidationError('Bad messages array.');
     }
     const messages = bdmessages.map((msg: Message) => {
       return new Message(msg.username, msg.timestamp, msg.expires, msg.level, msg.message);
@@ -378,6 +385,18 @@ class RefreshAnnouncements {
         }
       }
     } catch (e) {
+      // Handle validation errors separately from network errors
+      if (e instanceof ValidationError) {
+        console.warn(`A validation error occurred while processing announcements: ${e.message}`);
+        console.warn('The service will continue to poll for new announcements at the normal interval.');
+
+        // Schedule the next poll without engaging backoff logic
+        setTimeout(() => {
+          this.updateAnnouncements(url, n);
+        }, n);
+        return;
+      }
+
       // there was an error with fetching
       console.warn(`Error fetching announcements: ${e}`);
 
