@@ -1,6 +1,6 @@
 {
     "name": "stsci-announce",
-    "version": "0.6.0",
+    "version": "0.7.0",
     "description": "A JupyterLab extension.",
     "keywords": [
         "jupyter",
@@ -16,10 +16,12 @@
         "name": "Josh Geden",
         "email": "jgeden@lbl.gov"
     },
-    "maintainers": {
-        "name": "Todd Miller",
-        "e-mail": "jmiller@stsci.edu"
-    },
+    "maintainers": [
+        {
+            "name": "Todd Miller",
+            "e-mail": "jmiller@stsci.edu"
+        }
+    ],
     "files": [
         "lib/**/*.{d.ts,eot,gif,html,jpg,js,js.map,json,png,svg,woff2,ttf}",
         "style/**/*.{css,.js,eot,gif,html,jpg,json,png,svg,woff2,ttf}",
@@ -51,11 +53,18 @@
         "watch:src": "tsc -w"
     },
     "dependencies": {
-        "@jupyterlab/application": "^4.0.0",
-        "@lumino/widgets": "^2.0.1"
+        "@jupyterlab/application": "^4.5.0",
+        "@jupyterlab/apputils": "^4.5.0",
+        "@jupyterlab/services": "^7.5.0",
+        "@jupyterlab/settingregistry": "^4.5.0",
+        "@jupyterlab/statusbar": "^4.5.0",
+        "@jupyterlab/ui-components": "^4.5.0",
+        "@lumino/widgets": "^2.0.0",
+        "dompurify": "^3.3.0"
     },
     "devDependencies": {
-        "@jupyterlab/builder": "^4.0.0",
+        "@jupyterlab/builder": "^4.5.0",
+        "@types/dompurify": "^3.0.0",
         "@types/json-schema": "^7.0.11",
         "@types/lodash": "^4.17.0",
         "@types/react": "^18.0.26",
@@ -76,6 +85,8 @@
         "stylelint-config-standard": "^26.0.0",
         "stylelint-prettier": "^2.0.0",
         "typescript": "~5.0.2",
+        "webpack": "^5.103.0",
+        "webpack-cli": "^6.0.1",
         "yjs": "^13.5.40"
     },
     "sideEffects": [
