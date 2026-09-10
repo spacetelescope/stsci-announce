@@ -451,10 +451,7 @@ class RefreshAnnouncements {
   createAnnouncementsButton() {
     // class used to create the open announcements button
     class ButtonWidget extends Widget {
-      public constructor(
-        announcementsObject: RefreshAnnouncements,
-        options = { node: document.createElement('span') }
-      ) {
+      public constructor(announcementsObject: RefreshAnnouncements, options = { node: document.createElement('span') }) {
         super(options);
         this.node.classList.add('open-announcements');
 

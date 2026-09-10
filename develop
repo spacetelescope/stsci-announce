@@ -19,7 +19,7 @@ esac
 
 pip install -e .
 
-jupyter labextension develop . --overwrite
+jupyter-builder develop . --overwrite
 
 jlpm run build
 
